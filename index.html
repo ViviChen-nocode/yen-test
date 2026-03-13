@@ -1304,7 +1304,7 @@ function setFontSize(size) {
 })();
 
 // ========== CONFIG ==========
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxBxRyam06tvjMflW4W_77xEPTbsMEwRH1565mEiZRTNcE5D6kWivHyH3YadoAbxK_B8g/exec';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzT6b97XTTrU8GP5-m5oLr2b-pwSVtWB8mhK8yBQZn9IGOtDKe1BW65zmP6wT5jkah88A/exec';
 
 // ========== STATE ==========
 let currentStep = 1;
@@ -1432,35 +1432,11 @@ async function submitForm() {
   };
 
   try {
-    // 用隱藏 form 提交，最相容 GAS
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = GOOGLE_SCRIPT_URL;
-    form.target = 'hidden_iframe';
-    const input = document.createElement('input');
-    input.type = 'hidden';
-    input.name = 'payload';
-    input.value = JSON.stringify(payload);
-    form.appendChild(input);
-    document.body.appendChild(form);
-
-    // 建立隱藏 iframe 接收回應
-    let iframe = document.getElementById('hidden_iframe');
-    if (!iframe) {
-      iframe = document.createElement('iframe');
-      iframe.name = 'hidden_iframe';
-      iframe.id = 'hidden_iframe';
-      iframe.style.display = 'none';
-      document.body.appendChild(iframe);
-    }
-
-    form.submit();
-    form.remove();
-
-    // 等一下讓提交完成
-    await new Promise(r => setTimeout(r, 2000));
+    // 用 GET + URL 參數提交（避免 Workspace 帳號擋 POST）
+    const url = GOOGLE_SCRIPT_URL + '?payload=' + encodeURIComponent(JSON.stringify(payload));
+    await fetch(url, { mode: 'no-cors' });
   } catch (err) {
-    // 仍視為成功
+    // no-cors 模式視為成功
   }
 
   loading.classList.remove('show');

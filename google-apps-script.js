@@ -52,6 +52,38 @@ function doPost(e) {
 }
 
 function doGet(e) {
+  // 如果帶有 payload 參數，就當作問卷提交處理
+  if (e.parameter.payload) {
+    try {
+      const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];
+      const data = JSON.parse(e.parameter.payload);
+
+      const fields = [
+        'timestamp',
+        'age_filter', 'bank_filter',
+        'ta1', 'ta2', 'ta3', 'ta4',
+        'io1', 'io2', 'io3', 'io4',
+        'eu1', 'eu2', 'eu3', 'eu4',
+        'tr1', 'tr2', 'tr3', 'tr4',
+        'pr1', 'pr2', 'pr3', 'pr4',
+        'pv1', 'pv2', 'pv3', 'pv4',
+        'ui1', 'ui2', 'ui3', 'ui4',
+        'gender', 'age', 'education', 'occupation', 'income', 'has_account'
+      ];
+
+      const row = fields.map(f => data[f] || '');
+      sheet.appendRow(row);
+
+      return ContentService
+        .createTextOutput(JSON.stringify({ status: 'success' }))
+        .setMimeType(ContentService.MimeType.JSON);
+    } catch (err) {
+      return ContentService
+        .createTextOutput(JSON.stringify({ status: 'error', message: err.toString() }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+
   return ContentService
     .createTextOutput('Survey API is running.')
     .setMimeType(ContentService.MimeType.TEXT);
