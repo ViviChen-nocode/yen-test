@@ -1,0 +1,1457 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>純網銀之使用意圖與相關因素研究</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700&family=Instrument+Serif&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --pri: #0D9488;
+    --pri-soft: #CCFBF1;
+    --pri-glow: rgba(13,148,136,0.15);
+    --bg: #FEFCF9;
+    --surface: #FFFFFF;
+    --text: #1C1917;
+    --text-2: #78716C;
+    --text-3: #A8A29E;
+    --border: #E7E5E4;
+    --border-light: #F5F5F4;
+    --err: #DC2626;
+    --err-bg: #FEF2F2;
+    --ok: #16A34A;
+    --radius: 16px;
+    --shadow-sm: 0 1px 2px rgba(28,25,23,0.04);
+    --shadow-md: 0 4px 16px rgba(28,25,23,0.06);
+    --font-scale: 1;
+  }
+
+  /* ── Dark mode ── */
+  [data-theme="dark"] {
+    --pri: #2DD4BF;
+    --pri-soft: rgba(45,212,191,0.12);
+    --pri-glow: rgba(45,212,191,0.2);
+    --bg: #1A1A1A;
+    --surface: #262626;
+    --text: #F5F5F4;
+    --text-2: #A8A29E;
+    --text-3: #78716C;
+    --border: #3F3F3F;
+    --border-light: #2E2E2E;
+    --err: #F87171;
+    --err-bg: rgba(248,113,113,0.1);
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.2);
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.3);
+    --stepper-bg: rgba(26,26,26,0.92);
+    --loading-bg: rgba(26,26,26,0.92);
+  }
+
+  /* ── Font size levels ── */
+  [data-fontsize="small"]  { --font-scale: 0.88; }
+  [data-fontsize="medium"] { --font-scale: 1; }
+  [data-fontsize="large"]  { --font-scale: 1.15; }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: "Noto Sans TC", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100dvh;
+    transition: background 0.3s, color 0.3s;
+  }
+
+  /* ── Grain overlay ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    opacity: 0.025;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* ── Toolbar (theme + font size) ── */
+  .toolbar {
+    position: fixed;
+    top: 12px;
+    right: 12px;
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 28px;
+    padding: 5px 8px;
+    box-shadow: var(--shadow-md);
+    transition: background 0.3s, border-color 0.3s;
+  }
+  .toolbar-btn {
+    width: 34px;
+    height: 34px;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: var(--text-2);
+    transition: all 0.2s;
+    -webkit-tap-highlight-color: transparent;
+    position: relative;
+  }
+  .toolbar-btn:active { transform: scale(0.9); }
+  .toolbar-btn:hover { background: var(--border-light); }
+  .toolbar-btn.active-size {
+    background: var(--pri-soft);
+    color: var(--pri);
+  }
+  .toolbar-divider {
+    width: 1px;
+    height: 20px;
+    background: var(--border);
+    margin: 0 2px;
+  }
+  .font-btn { font-weight: 700; font-family: inherit; }
+  .font-btn[data-size="small"]  { font-size: 12px; }
+  .font-btn[data-size="medium"] { font-size: 15px; }
+  .font-btn[data-size="large"]  { font-size: 18px; }
+
+  .container {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 0 20px 120px;
+  }
+
+  /* ── Header ── */
+  .header {
+    padding: 48px 4px 32px;
+    text-align: center;
+  }
+  .header-badge {
+    display: inline-block;
+    font-size: calc(11px * var(--font-scale));
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    color: var(--pri);
+    background: var(--pri-soft);
+    padding: 5px 14px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+  }
+  .header h1 {
+    font-family: "Instrument Serif", "Noto Sans TC", serif;
+    font-size: calc(28px * var(--font-scale));
+    font-weight: 400;
+    line-height: 1.4;
+    letter-spacing: 0.02em;
+    margin-bottom: 16px;
+    color: var(--text);
+  }
+  .header p {
+    font-size: calc(14px * var(--font-scale));
+    color: var(--text-2);
+    line-height: 1.8;
+    max-width: 340px;
+    margin: 0 auto;
+  }
+  .header .credits {
+    margin-top: 14px;
+    font-size: calc(12px * var(--font-scale));
+    color: var(--text-3);
+    line-height: 1.8;
+  }
+
+  /* ── Progress stepper ── */
+  .stepper {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--stepper-bg, rgba(254,252,249,0.92));
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    padding: 14px 0 12px;
+    margin: 0 -20px;
+    width: calc(100% + 40px);
+    border-bottom: 1px solid var(--border-light);
+  }
+  .stepper-inner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    padding: 0 24px;
+  }
+  .stepper-dot {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    background: var(--surface);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-3);
+    transition: all 0.4s cubic-bezier(0.34,1.56,0.64,1);
+    flex-shrink: 0;
+    position: relative;
+  }
+  .stepper-dot.active {
+    border-color: var(--pri);
+    background: var(--pri);
+    color: white;
+    transform: scale(1.15);
+    box-shadow: 0 0 0 4px var(--pri-glow);
+  }
+  .stepper-dot.done {
+    border-color: var(--pri);
+    background: var(--pri-soft);
+    color: var(--pri);
+  }
+  .stepper-dot.done::after {
+    content: '✓';
+    font-size: 14px;
+    font-weight: 700;
+  }
+  .stepper-line {
+    flex: 1;
+    height: 2px;
+    background: var(--border);
+    max-width: 48px;
+    transition: background 0.4s ease;
+  }
+  .stepper-line.done { background: var(--pri); }
+  .stepper-label {
+    font-size: calc(12px * var(--font-scale));
+    color: var(--text-3);
+    text-align: center;
+    margin-top: 8px;
+  }
+
+  /* ── Steps ── */
+  .step { display: none; }
+  .step.active {
+    display: block;
+    animation: fadeUp 0.45s cubic-bezier(0.22,1,0.36,1);
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Section header ── */
+  .section-intro {
+    padding: 28px 0 8px;
+  }
+  .section-intro h2 {
+    font-size: calc(20px * var(--font-scale));
+    font-weight: 700;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-intro h2 .sec-icon {
+    font-size: 22px;
+    line-height: 1;
+  }
+  .section-intro p {
+    font-size: calc(13px * var(--font-scale));
+    color: var(--text-2);
+    line-height: 1.7;
+  }
+
+  /* ── Question card ── */
+  .q-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: calc(22px * var(--font-scale)) 20px;
+    margin: 12px 0;
+    box-shadow: var(--shadow-sm);
+    border: 1.5px solid transparent;
+    transition: border-color 0.2s, box-shadow 0.2s, background 0.3s;
+  }
+  .q-card.answered {
+    border-color: var(--pri-soft);
+  }
+  .q-card.has-error {
+    border-color: var(--err);
+    background: var(--err-bg);
+  }
+  .q-card.has-error .error-msg { display: flex; }
+
+  .q-label {
+    font-size: calc(15px * var(--font-scale));
+    font-weight: 500;
+    line-height: 1.7;
+    margin-bottom: 18px;
+    display: block;
+    color: var(--text);
+  }
+  .q-tag {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: calc(22px * var(--font-scale));
+    height: calc(22px * var(--font-scale));
+    padding: 0 7px;
+    background: var(--pri);
+    color: white;
+    font-size: calc(11px * var(--font-scale));
+    font-weight: 700;
+    border-radius: 6px;
+    margin-right: 8px;
+    vertical-align: 1px;
+    letter-spacing: 0.02em;
+  }
+  .q-label .required {
+    color: var(--err);
+    margin-left: 3px;
+    font-weight: 400;
+  }
+
+  /* ── Radio options ── */
+  .radio-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .radio-option {
+    display: flex;
+    align-items: center;
+    padding: 14px 16px;
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    -webkit-tap-highlight-color: transparent;
+    background: var(--bg);
+  }
+  .radio-option:active { transform: scale(0.985); }
+  .radio-option.selected {
+    border-color: var(--pri);
+    background: var(--pri-soft);
+  }
+  .radio-option input { display: none; }
+  .radio-dot {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--border);
+    border-radius: 50%;
+    margin-right: 12px;
+    flex-shrink: 0;
+    position: relative;
+    transition: all 0.25s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .radio-option.selected .radio-dot {
+    border-color: var(--pri);
+    border-width: 2px;
+  }
+  .radio-option.selected .radio-dot::after {
+    content: '';
+    position: absolute;
+    top: 3px; left: 3px;
+    width: 10px; height: 10px;
+    background: var(--pri);
+    border-radius: 50%;
+    animation: popIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  @keyframes popIn {
+    from { transform: scale(0); }
+    to { transform: scale(1); }
+  }
+  .radio-option span:last-child { font-size: calc(15px * var(--font-scale)); color: var(--text); }
+
+  /* ── Likert scale ── */
+  .likert-container { padding: 2px 0; }
+  .likert-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    font-size: calc(12px * var(--font-scale));
+    color: var(--text-3);
+    font-weight: 400;
+  }
+  .likert-group {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .likert-btn {
+    flex: 1;
+    aspect-ratio: 1;
+    max-width: 58px;
+    border: 2px solid var(--border);
+    border-radius: 14px;
+    background: var(--bg);
+    font-size: calc(18px * var(--font-scale));
+    font-weight: 700;
+    color: var(--text-3);
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.34,1.56,0.64,1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    -webkit-tap-highlight-color: transparent;
+    position: relative;
+  }
+  .likert-btn:active { transform: scale(0.9); }
+  .likert-btn.selected {
+    border-color: var(--pri);
+    background: var(--pri);
+    color: white;
+    transform: scale(1.08);
+    box-shadow: 0 4px 14px var(--pri-glow);
+  }
+
+  /* ── Error ── */
+  .error-msg {
+    display: none;
+    align-items: center;
+    gap: 5px;
+    color: var(--err);
+    font-size: calc(13px * var(--font-scale));
+    margin-top: 10px;
+    font-weight: 500;
+  }
+  .error-msg::before {
+    content: '!';
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--err);
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  /* ── Encouragement ── */
+  .encourage {
+    text-align: center;
+    padding: 20px 16px;
+    font-size: calc(14px * var(--font-scale));
+    color: var(--text-2);
+    line-height: 1.7;
+  }
+  .encourage .emoji { font-size: calc(28px * var(--font-scale)); display: block; margin-bottom: 8px; }
+
+  /* ── Navigation ── */
+  .nav-area {
+    display: flex;
+    gap: 10px;
+    margin-top: 32px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-light);
+  }
+  .btn {
+    flex: 1;
+    padding: 15px 20px;
+    border: none;
+    border-radius: 14px;
+    font-size: calc(16px * var(--font-scale));
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-back {
+    background: var(--border-light);
+    color: var(--text-2);
+    flex: 0.6;
+  }
+  .btn-forward {
+    background: var(--pri);
+    color: white;
+    box-shadow: 0 4px 14px var(--pri-glow);
+  }
+  .btn-forward:hover { box-shadow: 0 6px 20px rgba(13,148,136,0.25); }
+  .btn-done {
+    background: linear-gradient(135deg, var(--pri) 0%, #0F766E 100%);
+    color: white;
+    box-shadow: 0 4px 14px var(--pri-glow);
+  }
+  .btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none !important;
+  }
+  .btn .arrow { font-size: 18px; }
+
+  /* ── Disqualified ── */
+  .end-page {
+    display: none;
+    text-align: center;
+    padding: 80px 24px 40px;
+    animation: fadeUp 0.5s ease;
+  }
+  .end-page .end-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+    margin-bottom: 24px;
+  }
+  .end-page .end-icon.sorry {
+    background: #FEF3C7;
+  }
+  .end-page .end-icon.yay {
+    background: var(--pri-soft);
+  }
+  .end-page h2 {
+    font-size: calc(22px * var(--font-scale));
+    font-weight: 700;
+    margin-bottom: 12px;
+  }
+  .end-page p {
+    color: var(--text-2);
+    font-size: calc(15px * var(--font-scale));
+    line-height: 1.8;
+    max-width: 320px;
+    margin: 0 auto;
+  }
+  .end-page.visible { display: block; }
+
+  /* ── Loading ── */
+  .loading-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: var(--loading-bg, rgba(254,252,249,0.92));
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 999;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+  }
+  .loading-overlay.show { display: flex; }
+  .loader {
+    width: 44px;
+    height: 44px;
+    border: 3px solid var(--border);
+    border-top-color: var(--pri);
+    border-radius: 50%;
+    animation: spin 0.75s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-overlay p {
+    margin-top: 18px;
+    color: var(--text-2);
+    font-size: calc(15px * var(--font-scale));
+    font-weight: 500;
+  }
+
+  /* ── Divider between constructs ── */
+  .construct-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 28px 0 4px;
+  }
+  .construct-divider::before,
+  .construct-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+  .construct-divider span {
+    font-size: 18px;
+  }
+</style>
+</head>
+<body>
+
+<!-- Toolbar: theme + font size -->
+<div class="toolbar" id="toolbar">
+  <button class="toolbar-btn" id="themeToggle" onclick="toggleTheme()" aria-label="切換深淺色模式">&#9790;</button>
+  <div class="toolbar-divider"></div>
+  <button class="toolbar-btn font-btn" data-size="small" onclick="setFontSize('small')" aria-label="小字">A</button>
+  <button class="toolbar-btn font-btn active-size" data-size="medium" onclick="setFontSize('medium')" aria-label="中字">A</button>
+  <button class="toolbar-btn font-btn" data-size="large" onclick="setFontSize('large')" aria-label="大字">A</button>
+</div>
+
+<div class="container" id="app">
+  <!-- Header -->
+  <div class="header" id="header">
+    <div class="header-badge">學術研究問卷</div>
+    <h1>純網銀之使用意圖<br>與相關因素研究</h1>
+    <p>親愛的受訪者您好，本研究為學術用途，所有資料絕對保密，僅供統計分析使用，請放心填答。</p>
+    <div class="credits">淡江大學企業管理系研究所碩士班<br>指導教授：李月華 博士 ／ 研究生：顏珮安</div>
+  </div>
+
+  <!-- Progress stepper -->
+  <div class="stepper" id="stepper">
+    <div class="stepper-inner">
+      <div class="stepper-dot active" data-dot="1">1</div>
+      <div class="stepper-line" data-line="1"></div>
+      <div class="stepper-dot" data-dot="2">2</div>
+      <div class="stepper-line" data-line="2"></div>
+      <div class="stepper-dot" data-dot="3">3</div>
+      <div class="stepper-line" data-line="3"></div>
+      <div class="stepper-dot" data-dot="4">4</div>
+      <div class="stepper-line" data-line="4"></div>
+      <div class="stepper-dot" data-dot="5">5</div>
+    </div>
+    <div class="stepper-label" id="stepperLabel">篩選題</div>
+  </div>
+
+  <!-- ==================== STEP 1: 篩選 ==================== -->
+  <div class="step active" data-step="1">
+    <div class="section-intro">
+      <h2><span class="sec-icon">&#128269;</span> 前置篩選</h2>
+      <p>先確認一下您是否符合本研究的填答資格，只要兩題就好！</p>
+    </div>
+
+    <div class="q-card" data-field="age_filter">
+      <label class="q-label">
+        <span class="q-tag">1</span>您的年齡是否介於 18 至 35 歲之間？<span class="required">*</span>
+      </label>
+      <div class="radio-group">
+        <label class="radio-option" onclick="selectRadio(this)">
+          <input type="radio" name="age_filter" value="是"><span class="radio-dot"></span><span>是</span>
+        </label>
+        <label class="radio-option" onclick="selectRadio(this)">
+          <input type="radio" name="age_filter" value="否"><span class="radio-dot"></span><span>否</span>
+        </label>
+      </div>
+      <div class="error-msg">請選擇一個選項</div>
+    </div>
+
+    <div class="q-card" data-field="bank_filter">
+      <label class="q-label">
+        <span class="q-tag">2</span>您是否有使用過純網銀（僅包含：LINE Bank、樂天銀行、將來銀行）？<span class="required">*</span>
+      </label>
+      <div class="radio-group">
+        <label class="radio-option" onclick="selectRadio(this)">
+          <input type="radio" name="bank_filter" value="是"><span class="radio-dot"></span><span>是</span>
+        </label>
+        <label class="radio-option" onclick="selectRadio(this)">
+          <input type="radio" name="bank_filter" value="否"><span class="radio-dot"></span><span>否</span>
+        </label>
+      </div>
+      <div class="error-msg">請選擇一個選項</div>
+    </div>
+
+    <div class="nav-area">
+      <button class="btn btn-forward" onclick="nextStep()">開始填寫 <span class="arrow">&#8594;</span></button>
+    </div>
+  </div>
+
+  <!-- ==================== STEP 2: 科技焦慮 + 資訊過載 ==================== -->
+  <div class="step" data-step="2">
+    <div class="section-intro">
+      <h2><span class="sec-icon">&#128171;</span> 科技焦慮</h2>
+      <p>在使用純網銀時，您產生的心理不安程度？請選擇最符合您感受的選項。</p>
+    </div>
+
+    <div class="q-card" data-field="ta1">
+      <label class="q-label"><span class="q-tag">1</span>在使用純網銀進行交易時，我常會感到莫名的緊張或心理壓力。<span class="required">*</span></label>
+      <div class="likert-container">
+        <div class="likert-labels"><span>非常不同意</span><span>非常同意</span></div>
+        <div class="likert-group">
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'ta1',1)">1</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'ta1',2)">2</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'ta1',3)">3</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'ta1',4)">4</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'ta1',5)">5</button>
+        </div>
+      </div>
+      <div class="error-msg">請選擇一個選項</div>
+    </div>
+
+    <div class="q-card" data-field="ta2">
+      <label class="q-label"><span class="q-tag">2</span>想到要完全依賴數位介面來處理金錢問題，會讓我感到猶豫或不安。<span class="required">*</span></label>
+      <div class="likert-container">
+        <div class="likert-labels"><span>非常不同意</span><span>非常同意</span></div>
+        <div class="likert-group">
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'ta2',1)">1</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'ta2',2)">2</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'ta2',3)">3</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'ta2',4)">4</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'ta2',5)">5</button>
+        </div>
+      </div>
+      <div class="error-msg">請選擇一個選項</div>
+    </div>
+
+    <div class="q-card" data-field="ta3">
+      <label class="q-label"><span class="q-tag">3</span>面對純網銀推出的新功能或更新，我會感到些許不安。<span class="required">*</span></label>
+      <div class="likert-container">
+        <div class="likert-labels"><span>非常不同意</span><span>非常同意</span></div>
+        <div class="likert-group">
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'ta3',1)">1</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'ta3',2)">2</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'ta3',3)">3</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'ta3',4)">4</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'ta3',5)">5</button>
+        </div>
+      </div>
+      <div class="error-msg">請選擇一個選項</div>
+    </div>
+
+    <div class="q-card" data-field="ta4">
+      <label class="q-label"><span class="q-tag">4</span>當純網銀系統回應稍慢或出現未知畫面時，我會感到不知所措，並害怕因為無法掌握當下狀況而造成問題。<span class="required">*</span></label>
+      <div class="likert-container">
+        <div class="likert-labels"><span>非常不同意</span><span>非常同意</span></div>
+        <div class="likert-group">
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'ta4',1)">1</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'ta4',2)">2</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'ta4',3)">3</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'ta4',4)">4</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'ta4',5)">5</button>
+        </div>
+      </div>
+      <div class="error-msg">請選擇一個選項</div>
+    </div>
+
+    <div class="construct-divider"><span>&#9670;</span></div>
+
+    <div class="section-intro">
+      <h2><span class="sec-icon">&#128200;</span> 資訊過載</h2>
+      <p>您對純網銀介面呈現資訊的感受？</p>
+    </div>
+
+    <div class="q-card" data-field="io1">
+      <label class="q-label"><span class="q-tag">5</span>純網銀提供的資訊量過於龐大，往往超過我當下能消化或處理的範圍。<span class="required">*</span></label>
+      <div class="likert-container">
+        <div class="likert-labels"><span>非常不同意</span><span>非常同意</span></div>
+        <div class="likert-group">
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'io1',1)">1</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'io1',2)">2</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'io1',3)">3</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'io1',4)">4</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'io1',5)">5</button>
+        </div>
+      </div>
+      <div class="error-msg">請選擇一個選項</div>
+    </div>
+
+    <div class="q-card" data-field="io2">
+      <label class="q-label"><span class="q-tag">6</span>我常常需要花很多時間才能理解純網銀上的資訊內容。<span class="required">*</span></label>
+      <div class="likert-container">
+        <div class="likert-labels"><span>非常不同意</span><span>非常同意</span></div>
+        <div class="likert-group">
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'io2',1)">1</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'io2',2)">2</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'io2',3)">3</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'io2',4)">4</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'io2',5)">5</button>
+        </div>
+      </div>
+      <div class="error-msg">請選擇一個選項</div>
+    </div>
+
+    <div class="q-card" data-field="io3">
+      <label class="q-label"><span class="q-tag">7</span>純網銀的資訊太過繁雜，讓我難以快速做出正確決定。<span class="required">*</span></label>
+      <div class="likert-container">
+        <div class="likert-labels"><span>非常不同意</span><span>非常同意</span></div>
+        <div class="likert-group">
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'io3',1)">1</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'io3',2)">2</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'io3',3)">3</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'io3',4)">4</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'io3',5)">5</button>
+        </div>
+      </div>
+      <div class="error-msg">請選擇一個選項</div>
+    </div>
+
+    <div class="q-card" data-field="io4">
+      <label class="q-label"><span class="q-tag">8</span>純網銀介面中呈現的資訊過多，導致我感到混亂而無法分辨重點。<span class="required">*</span></label>
+      <div class="likert-container">
+        <div class="likert-labels"><span>非常不同意</span><span>非常同意</span></div>
+        <div class="likert-group">
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'io4',1)">1</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'io4',2)">2</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'io4',3)">3</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'io4',4)">4</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'io4',5)">5</button>
+        </div>
+      </div>
+      <div class="error-msg">請選擇一個選項</div>
+    </div>
+
+    <div class="encourage">
+      <span class="emoji">&#128170;</span>
+      很棒！問卷快一半了，繼續加油！
+    </div>
+
+    <div class="nav-area">
+      <button class="btn btn-back" onclick="prevStep()">&#8592; 上一頁</button>
+      <button class="btn btn-forward" onclick="nextStep()">下一頁 <span class="arrow">&#8594;</span></button>
+    </div>
+  </div>
+
+  <!-- ==================== STEP 3: 操作易用性 + 信任 ==================== -->
+  <div class="step" data-step="3">
+    <div class="section-intro">
+      <h2><span class="sec-icon">&#128241;</span> 操作易用性</h2>
+      <p>您對純網銀操作介面的感受？</p>
+    </div>
+
+    <div class="q-card" data-field="eu1">
+      <label class="q-label"><span class="q-tag">9</span>我覺得純網銀的操作介面設計清楚易懂。<span class="required">*</span></label>
+      <div class="likert-container">
+        <div class="likert-labels"><span>非常不同意</span><span>非常同意</span></div>
+        <div class="likert-group">
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'eu1',1)">1</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'eu1',2)">2</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'eu1',3)">3</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'eu1',4)">4</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'eu1',5)">5</button>
+        </div>
+      </div>
+      <div class="error-msg">請選擇一個選項</div>
+    </div>
+
+    <div class="q-card" data-field="eu2">
+      <label class="q-label"><span class="q-tag">10</span>我覺得學會操作純網銀對我來說並不會感到困難。<span class="required">*</span></label>
+      <div class="likert-container">
+        <div class="likert-labels"><span>非常不同意</span><span>非常同意</span></div>
+        <div class="likert-group">
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'eu2',1)">1</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'eu2',2)">2</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'eu2',3)">3</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'eu2',4)">4</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'eu2',5)">5</button>
+        </div>
+      </div>
+      <div class="error-msg">請選擇一個選項</div>
+    </div>
+
+    <div class="q-card" data-field="eu3">
+      <label class="q-label"><span class="q-tag">11</span>我覺得純網銀的各項功能步驟是簡單明瞭的。<span class="required">*</span></label>
+      <div class="likert-container">
+        <div class="likert-labels"><span>非常不同意</span><span>非常同意</span></div>
+        <div class="likert-group">
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'eu3',1)">1</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'eu3',2)">2</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'eu3',3)">3</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'eu3',4)">4</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'eu3',5)">5</button>
+        </div>
+      </div>
+      <div class="error-msg">請選擇一個選項</div>
+    </div>
+
+    <div class="q-card" data-field="eu4">
+      <label class="q-label"><span class="q-tag">12</span>整體而言，我認為純網銀是容易使用的。<span class="required">*</span></label>
+      <div class="likert-container">
+        <div class="likert-labels"><span>非常不同意</span><span>非常同意</span></div>
+        <div class="likert-group">
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'eu4',1)">1</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'eu4',2)">2</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'eu4',3)">3</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'eu4',4)">4</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'eu4',5)">5</button>
+        </div>
+      </div>
+      <div class="error-msg">請選擇一個選項</div>
+    </div>
+
+    <div class="construct-divider"><span>&#9670;</span></div>
+
+    <div class="section-intro">
+      <h2><span class="sec-icon">&#128274;</span> 信任</h2>
+      <p>您對純網銀平台的信任程度？</p>
+    </div>
+
+    <div class="q-card" data-field="tr1">
+      <label class="q-label"><span class="q-tag">13</span>我相信純網銀有能力安全地處理我的個人資料。<span class="required">*</span></label>
+      <div class="likert-container">
+        <div class="likert-labels"><span>非常不同意</span><span>非常同意</span></div>
+        <div class="likert-group">
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'tr1',1)">1</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'tr1',2)">2</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'tr1',3)">3</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'tr1',4)">4</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'tr1',5)">5</button>
+        </div>
+      </div>
+      <div class="error-msg">請選擇一個選項</div>
+    </div>
+
+    <div class="q-card" data-field="tr2">
+      <label class="q-label"><span class="q-tag">14</span>我相信純網銀會信守對用戶的服務承諾。<span class="required">*</span></label>
+      <div class="likert-container">
+        <div class="likert-labels"><span>非常不同意</span><span>非常同意</span></div>
+        <div class="likert-group">
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'tr2',1)">1</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'tr2',2)">2</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'tr2',3)">3</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'tr2',4)">4</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'tr2',5)">5</button>
+        </div>
+      </div>
+      <div class="error-msg">請選擇一個選項</div>
+    </div>
+
+    <div class="q-card" data-field="tr3">
+      <label class="q-label"><span class="q-tag">15</span>我相信純網銀不會在未經授權的情況下使用我的資訊。<span class="required">*</span></label>
+      <div class="likert-container">
+        <div class="likert-labels"><span>非常不同意</span><span>非常同意</span></div>
+        <div class="likert-group">
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'tr3',1)">1</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'tr3',2)">2</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'tr3',3)">3</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'tr3',4)">4</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'tr3',5)">5</button>
+        </div>
+      </div>
+      <div class="error-msg">請選擇一個選項</div>
+    </div>
+
+    <div class="q-card" data-field="tr4">
+      <label class="q-label"><span class="q-tag">16</span>整體而言，我信任純網銀平台的運作機制。<span class="required">*</span></label>
+      <div class="likert-container">
+        <div class="likert-labels"><span>非常不同意</span><span>非常同意</span></div>
+        <div class="likert-group">
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'tr4',1)">1</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'tr4',2)">2</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'tr4',3)">3</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'tr4',4)">4</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'tr4',5)">5</button>
+        </div>
+      </div>
+      <div class="error-msg">請選擇一個選項</div>
+    </div>
+
+    <div class="encourage">
+      <span class="emoji">&#127793;</span>
+      已經過半囉！再一頁就到最後的基本資料了～
+    </div>
+
+    <div class="nav-area">
+      <button class="btn btn-back" onclick="prevStep()">&#8592; 上一頁</button>
+      <button class="btn btn-forward" onclick="nextStep()">下一頁 <span class="arrow">&#8594;</span></button>
+    </div>
+  </div>
+
+  <!-- ==================== STEP 4: 知覺風險 + 知覺價值 + 使用意圖 ==================== -->
+  <div class="step" data-step="4">
+    <div class="section-intro">
+      <h2><span class="sec-icon">&#9888;&#65039;</span> 知覺風險</h2>
+      <p>您在使用純網銀時所感受到的風險？</p>
+    </div>
+
+    <div class="q-card" data-field="pr1">
+      <label class="q-label"><span class="q-tag">17</span>使用純網銀進行交易，可能會讓我面臨金錢損失的風險。<span class="required">*</span></label>
+      <div class="likert-container">
+        <div class="likert-labels"><span>非常不同意</span><span>非常同意</span></div>
+        <div class="likert-group">
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'pr1',1)">1</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'pr1',2)">2</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'pr1',3)">3</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'pr1',4)">4</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'pr1',5)">5</button>
+        </div>
+      </div>
+      <div class="error-msg">請選擇一個選項</div>
+    </div>
+
+    <div class="q-card" data-field="pr2">
+      <label class="q-label"><span class="q-tag">18</span>使用純網銀會讓我面臨個資被駭客竊取或盜用的風險。<span class="required">*</span></label>
+      <div class="likert-container">
+        <div class="likert-labels"><span>非常不同意</span><span>非常同意</span></div>
+        <div class="likert-group">
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'pr2',1)">1</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'pr2',2)">2</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'pr2',3)">3</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'pr2',4)">4</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'pr2',5)">5</button>
+        </div>
+      </div>
+      <div class="error-msg">請選擇一個選項</div>
+    </div>
+
+    <div class="q-card" data-field="pr3">
+      <label class="q-label"><span class="q-tag">19</span>因為沒有實體分行，一旦系統出問題，我會面臨求助無門或難以解決問題的麻煩。<span class="required">*</span></label>
+      <div class="likert-container">
+        <div class="likert-labels"><span>非常不同意</span><span>非常同意</span></div>
+        <div class="likert-group">
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'pr3',1)">1</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'pr3',2)">2</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'pr3',3)">3</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'pr3',4)">4</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'pr3',5)">5</button>
+        </div>
+      </div>
+      <div class="error-msg">請選擇一個選項</div>
+    </div>
+
+    <div class="q-card" data-field="pr4">
+      <label class="q-label"><span class="q-tag">20</span>我認為將主要資金交付給無實體據點的純網銀，是不確定性相當高的決定。<span class="required">*</span></label>
+      <div class="likert-container">
+        <div class="likert-labels"><span>非常不同意</span><span>非常同意</span></div>
+        <div class="likert-group">
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'pr4',1)">1</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'pr4',2)">2</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'pr4',3)">3</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'pr4',4)">4</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'pr4',5)">5</button>
+        </div>
+      </div>
+      <div class="error-msg">請選擇一個選項</div>
+    </div>
+
+    <div class="construct-divider"><span>&#9670;</span></div>
+
+    <div class="section-intro">
+      <h2><span class="sec-icon">&#128142;</span> 知覺價值</h2>
+      <p>您在使用純網銀後所感受到的效益與價值？</p>
+    </div>
+
+    <div class="q-card" data-field="pv1">
+      <label class="q-label"><span class="q-tag">21</span>我認為使用純網銀能有效節省我處理銀行業務的時間。<span class="required">*</span></label>
+      <div class="likert-container">
+        <div class="likert-labels"><span>非常不同意</span><span>非常同意</span></div>
+        <div class="likert-group">
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'pv1',1)">1</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'pv1',2)">2</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'pv1',3)">3</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'pv1',4)">4</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'pv1',5)">5</button>
+        </div>
+      </div>
+      <div class="error-msg">請選擇一個選項</div>
+    </div>
+
+    <div class="q-card" data-field="pv2">
+      <label class="q-label"><span class="q-tag">22</span>我認為純網銀提供的優惠利率與回饋方案對我具有吸引力。<span class="required">*</span></label>
+      <div class="likert-container">
+        <div class="likert-labels"><span>非常不同意</span><span>非常同意</span></div>
+        <div class="likert-group">
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'pv2',1)">1</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'pv2',2)">2</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'pv2',3)">3</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'pv2',4)">4</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'pv2',5)">5</button>
+        </div>
+      </div>
+      <div class="error-msg">請選擇一個選項</div>
+    </div>
+
+    <div class="q-card" data-field="pv3">
+      <label class="q-label"><span class="q-tag">23</span>我覺得純網銀提供的隨時隨地便利性對我很有價值。<span class="required">*</span></label>
+      <div class="likert-container">
+        <div class="likert-labels"><span>非常不同意</span><span>非常同意</span></div>
+        <div class="likert-group">
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'pv3',1)">1</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'pv3',2)">2</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'pv3',3)">3</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'pv3',4)">4</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'pv3',5)">5</button>
+        </div>
+      </div>
+      <div class="error-msg">請選擇一個選項</div>
+    </div>
+
+    <div class="q-card" data-field="pv4">
+      <label class="q-label"><span class="q-tag">24</span>整體而言，我覺得使用純網銀是利大於弊且有幫助的。<span class="required">*</span></label>
+      <div class="likert-container">
+        <div class="likert-labels"><span>非常不同意</span><span>非常同意</span></div>
+        <div class="likert-group">
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'pv4',1)">1</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'pv4',2)">2</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'pv4',3)">3</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'pv4',4)">4</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'pv4',5)">5</button>
+        </div>
+      </div>
+      <div class="error-msg">請選擇一個選項</div>
+    </div>
+
+    <div class="construct-divider"><span>&#9670;</span></div>
+
+    <div class="section-intro">
+      <h2><span class="sec-icon">&#128640;</span> 使用意圖</h2>
+      <p>您未來使用純網銀的意願？</p>
+    </div>
+
+    <div class="q-card" data-field="ui1">
+      <label class="q-label"><span class="q-tag">25</span>我未來會願意持續使用純網銀來處理金融事務。<span class="required">*</span></label>
+      <div class="likert-container">
+        <div class="likert-labels"><span>非常不同意</span><span>非常同意</span></div>
+        <div class="likert-group">
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'ui1',1)">1</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'ui1',2)">2</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'ui1',3)">3</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'ui1',4)">4</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'ui1',5)">5</button>
+        </div>
+      </div>
+      <div class="error-msg">請選擇一個選項</div>
+    </div>
+
+    <div class="q-card" data-field="ui2">
+      <label class="q-label"><span class="q-tag">26</span>我會願意向親友推薦使用純網銀。<span class="required">*</span></label>
+      <div class="likert-container">
+        <div class="likert-labels"><span>非常不同意</span><span>非常同意</span></div>
+        <div class="likert-group">
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'ui2',1)">1</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'ui2',2)">2</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'ui2',3)">3</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'ui2',4)">4</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'ui2',5)">5</button>
+        </div>
+      </div>
+      <div class="error-msg">請選擇一個選項</div>
+    </div>
+
+    <div class="q-card" data-field="ui3">
+      <label class="q-label"><span class="q-tag">27</span>若純網銀有推出新功能，我會願意嘗試使用。<span class="required">*</span></label>
+      <div class="likert-container">
+        <div class="likert-labels"><span>非常不同意</span><span>非常同意</span></div>
+        <div class="likert-group">
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'ui3',1)">1</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'ui3',2)">2</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'ui3',3)">3</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'ui3',4)">4</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'ui3',5)">5</button>
+        </div>
+      </div>
+      <div class="error-msg">請選擇一個選項</div>
+    </div>
+
+    <div class="q-card" data-field="ui4">
+      <label class="q-label"><span class="q-tag">28</span>在眾多金融服務中，我會優先考慮使用純網銀。<span class="required">*</span></label>
+      <div class="likert-container">
+        <div class="likert-labels"><span>非常不同意</span><span>非常同意</span></div>
+        <div class="likert-group">
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'ui4',1)">1</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'ui4',2)">2</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'ui4',3)">3</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'ui4',4)">4</button>
+          <button type="button" class="likert-btn" onclick="selectLikert(this,'ui4',5)">5</button>
+        </div>
+      </div>
+      <div class="error-msg">請選擇一個選項</div>
+    </div>
+
+    <div class="encourage">
+      <span class="emoji">&#127942;</span>
+      所有題目都答完了！最後填一下基本資料就完成囉～
+    </div>
+
+    <div class="nav-area">
+      <button class="btn btn-back" onclick="prevStep()">&#8592; 上一頁</button>
+      <button class="btn btn-forward" onclick="nextStep()">下一頁 <span class="arrow">&#8594;</span></button>
+    </div>
+  </div>
+
+  <!-- ==================== STEP 5: 基本資料 ==================== -->
+  <div class="step" data-step="5">
+    <div class="section-intro">
+      <h2><span class="sec-icon">&#128100;</span> 基本資料</h2>
+      <p>以下僅用於本研究的統計與調查，不另作其他用途，請放心填答。</p>
+    </div>
+
+    <div class="q-card" data-field="gender">
+      <label class="q-label"><span class="q-tag">一</span>性別<span class="required">*</span></label>
+      <div class="radio-group">
+        <label class="radio-option" onclick="selectRadio(this)">
+          <input type="radio" name="gender" value="男"><span class="radio-dot"></span><span>男</span>
+        </label>
+        <label class="radio-option" onclick="selectRadio(this)">
+          <input type="radio" name="gender" value="女"><span class="radio-dot"></span><span>女</span>
+        </label>
+      </div>
+      <div class="error-msg">請選擇一個選項</div>
+    </div>
+
+    <div class="q-card" data-field="age">
+      <label class="q-label"><span class="q-tag">二</span>年齡<span class="required">*</span></label>
+      <div class="radio-group">
+        <label class="radio-option" onclick="selectRadio(this)"><input type="radio" name="age" value="17歲(含)以下"><span class="radio-dot"></span><span>17歲(含)以下</span></label>
+        <label class="radio-option" onclick="selectRadio(this)"><input type="radio" name="age" value="18~20歲"><span class="radio-dot"></span><span>18~20歲</span></label>
+        <label class="radio-option" onclick="selectRadio(this)"><input type="radio" name="age" value="21~25歲"><span class="radio-dot"></span><span>21~25歲</span></label>
+        <label class="radio-option" onclick="selectRadio(this)"><input type="radio" name="age" value="26~30歲"><span class="radio-dot"></span><span>26~30歲</span></label>
+        <label class="radio-option" onclick="selectRadio(this)"><input type="radio" name="age" value="31~35歲"><span class="radio-dot"></span><span>31~35歲</span></label>
+        <label class="radio-option" onclick="selectRadio(this)"><input type="radio" name="age" value="36~40歲"><span class="radio-dot"></span><span>36~40歲</span></label>
+        <label class="radio-option" onclick="selectRadio(this)"><input type="radio" name="age" value="41~50歲"><span class="radio-dot"></span><span>41~50歲</span></label>
+        <label class="radio-option" onclick="selectRadio(this)"><input type="radio" name="age" value="51~60歲"><span class="radio-dot"></span><span>51~60歲</span></label>
+        <label class="radio-option" onclick="selectRadio(this)"><input type="radio" name="age" value="61歲(含)以上"><span class="radio-dot"></span><span>61歲(含)以上</span></label>
+      </div>
+      <div class="error-msg">請選擇一個選項</div>
+    </div>
+
+    <div class="q-card" data-field="education">
+      <label class="q-label"><span class="q-tag">三</span>教育程度<span class="required">*</span></label>
+      <div class="radio-group">
+        <label class="radio-option" onclick="selectRadio(this)"><input type="radio" name="education" value="高中/職"><span class="radio-dot"></span><span>高中/職</span></label>
+        <label class="radio-option" onclick="selectRadio(this)"><input type="radio" name="education" value="大學/大專"><span class="radio-dot"></span><span>大學/大專</span></label>
+        <label class="radio-option" onclick="selectRadio(this)"><input type="radio" name="education" value="研究所(含)以上"><span class="radio-dot"></span><span>研究所(含)以上</span></label>
+      </div>
+      <div class="error-msg">請選擇一個選項</div>
+    </div>
+
+    <div class="q-card" data-field="occupation">
+      <label class="q-label"><span class="q-tag">四</span>職業<span class="required">*</span></label>
+      <div class="radio-group">
+        <label class="radio-option" onclick="selectRadio(this)"><input type="radio" name="occupation" value="學生"><span class="radio-dot"></span><span>學生</span></label>
+        <label class="radio-option" onclick="selectRadio(this)"><input type="radio" name="occupation" value="軍公教"><span class="radio-dot"></span><span>軍公教</span></label>
+        <label class="radio-option" onclick="selectRadio(this)"><input type="radio" name="occupation" value="資訊與科技業"><span class="radio-dot"></span><span>資訊與科技業</span></label>
+        <label class="radio-option" onclick="selectRadio(this)"><input type="radio" name="occupation" value="金融與保險業"><span class="radio-dot"></span><span>金融與保險業</span></label>
+        <label class="radio-option" onclick="selectRadio(this)"><input type="radio" name="occupation" value="一般民營企業"><span class="radio-dot"></span><span>一般民營企業（含傳統製造、商貿、服務業等）</span></label>
+        <label class="radio-option" onclick="selectRadio(this)"><input type="radio" name="occupation" value="自由業/家管/待業"><span class="radio-dot"></span><span>自由業/家管/待業</span></label>
+        <label class="radio-option" onclick="selectRadio(this)"><input type="radio" name="occupation" value="其他"><span class="radio-dot"></span><span>其他</span></label>
+      </div>
+      <div class="error-msg">請選擇一個選項</div>
+    </div>
+
+    <div class="q-card" data-field="income">
+      <label class="q-label"><span class="q-tag">五</span>平均月收入<span class="required">*</span></label>
+      <div class="radio-group">
+        <label class="radio-option" onclick="selectRadio(this)"><input type="radio" name="income" value="無固定收入"><span class="radio-dot"></span><span>無固定收入</span></label>
+        <label class="radio-option" onclick="selectRadio(this)"><input type="radio" name="income" value="30,000元(含)以下"><span class="radio-dot"></span><span>30,000元(含)以下</span></label>
+        <label class="radio-option" onclick="selectRadio(this)"><input type="radio" name="income" value="30,001~45,000元"><span class="radio-dot"></span><span>30,001~45,000元</span></label>
+        <label class="radio-option" onclick="selectRadio(this)"><input type="radio" name="income" value="45,001~60,000元"><span class="radio-dot"></span><span>45,001~60,000元</span></label>
+        <label class="radio-option" onclick="selectRadio(this)"><input type="radio" name="income" value="60,001元(含)以上"><span class="radio-dot"></span><span>60,001元(含)以上</span></label>
+      </div>
+      <div class="error-msg">請選擇一個選項</div>
+    </div>
+
+    <div class="q-card" data-field="has_account">
+      <label class="q-label"><span class="q-tag">六</span>您目前是否已經擁有純網銀帳戶（LINE Bank、樂天、將來）？<span class="required">*</span></label>
+      <div class="radio-group">
+        <label class="radio-option" onclick="selectRadio(this)">
+          <input type="radio" name="has_account" value="是"><span class="radio-dot"></span><span>是</span>
+        </label>
+        <label class="radio-option" onclick="selectRadio(this)">
+          <input type="radio" name="has_account" value="否"><span class="radio-dot"></span><span>否</span>
+        </label>
+      </div>
+      <div class="error-msg">請選擇一個選項</div>
+    </div>
+
+    <div class="nav-area">
+      <button class="btn btn-back" onclick="prevStep()">&#8592; 上一頁</button>
+      <button class="btn btn-done" onclick="submitForm()">提交問卷 &#10003;</button>
+    </div>
+  </div>
+
+  <!-- Disqualified -->
+  <div class="end-page" id="disqualified">
+    <div class="end-icon sorry">&#128587;</div>
+    <h2>感謝您的參與意願</h2>
+    <p>很抱歉，本研究對象為 18~35 歲且有使用過純網銀的用戶。<br><br>感謝您撥出寶貴的時間，祝您一切順心！</p>
+  </div>
+
+  <!-- Success -->
+  <div class="end-page" id="successPage">
+    <div class="end-icon yay">&#127881;</div>
+    <h2 style="color:var(--pri);">提交成功！</h2>
+    <p>非常感謝您撥冗填寫本問卷，<br>您的回覆對本研究非常重要！</p>
+  </div>
+</div>
+
+<!-- Loading -->
+<div class="loading-overlay" id="loading">
+  <div class="loader"></div>
+  <p>正在提交問卷...</p>
+</div>
+
+<script>
+// ========== THEME & FONT SIZE ==========
+function toggleTheme() {
+  const html = document.documentElement;
+  const isDark = html.getAttribute('data-theme') === 'dark';
+  html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  document.getElementById('themeToggle').textContent = isDark ? '\u263E' : '\u2600';
+  localStorage.setItem('survey-theme', isDark ? 'light' : 'dark');
+}
+
+function setFontSize(size) {
+  document.documentElement.setAttribute('data-fontsize', size);
+  document.querySelectorAll('.font-btn').forEach(b => b.classList.remove('active-size'));
+  document.querySelector(`.font-btn[data-size="${size}"]`).classList.add('active-size');
+  localStorage.setItem('survey-fontsize', size);
+}
+
+// Restore saved preferences
+(function() {
+  const savedTheme = localStorage.getItem('survey-theme');
+  if (savedTheme === 'dark') {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    document.getElementById('themeToggle').textContent = '\u2600';
+  }
+  const savedSize = localStorage.getItem('survey-fontsize');
+  if (savedSize) setFontSize(savedSize);
+})();
+
+// ========== CONFIG ==========
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx3tjSxFkLzmoBZmN8-uyxXHnYgk1XxG8-ogo2gurpedb3Hf0o6YyMezQg93KJTcQuhDg/exec';
+
+// ========== STATE ==========
+let currentStep = 1;
+const totalSteps = 5;
+const formData = {};
+
+const stepLabels = ['篩選題', '科技焦慮 ＆ 資訊過載', '易用性 ＆ 信任', '風險 ＆ 價值 ＆ 意圖', '基本資料'];
+
+// ========== INTERACTION ==========
+function selectRadio(el) {
+  const group = el.closest('.radio-group');
+  group.querySelectorAll('.radio-option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  el.querySelector('input').checked = true;
+
+  const card = el.closest('.q-card');
+  card.classList.remove('has-error');
+  card.classList.add('answered');
+
+  const name = el.querySelector('input').name;
+  formData[name] = el.querySelector('input').value;
+}
+
+function selectLikert(btn, field, value) {
+  const group = btn.parentElement;
+  group.querySelectorAll('.likert-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  formData[field] = value;
+
+  const card = btn.closest('.q-card');
+  card.classList.remove('has-error');
+  card.classList.add('answered');
+}
+
+// ========== VALIDATION ==========
+function validateStep(step) {
+  const stepEl = document.querySelector(`.step[data-step="${step}"]`);
+  const questions = stepEl.querySelectorAll('.q-card[data-field]');
+  let valid = true;
+
+  questions.forEach(q => {
+    const field = q.dataset.field;
+    if (!formData[field]) {
+      q.classList.add('has-error');
+      valid = false;
+    } else {
+      q.classList.remove('has-error');
+    }
+  });
+
+  if (!valid) {
+    const firstError = stepEl.querySelector('.has-error');
+    if (firstError) firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  return valid;
+}
+
+// ========== NAVIGATION ==========
+function updateStepper() {
+  for (let i = 1; i <= totalSteps; i++) {
+    const dot = document.querySelector(`.stepper-dot[data-dot="${i}"]`);
+    const line = document.querySelector(`.stepper-line[data-line="${i}"]`);
+    dot.classList.remove('active', 'done');
+    dot.textContent = i;
+
+    if (i < currentStep) {
+      dot.classList.add('done');
+      dot.textContent = '';
+    } else if (i === currentStep) {
+      dot.classList.add('active');
+    }
+
+    if (line) {
+      line.classList.toggle('done', i < currentStep);
+    }
+  }
+  document.getElementById('stepperLabel').textContent = stepLabels[currentStep - 1];
+}
+
+function showStep(step) {
+  document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+  const target = document.querySelector(`.step[data-step="${step}"]`);
+  if (target) target.classList.add('active');
+  currentStep = step;
+  updateStepper();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function nextStep() {
+  if (!validateStep(currentStep)) return;
+
+  if (currentStep === 1) {
+    if (formData.age_filter === '否' || formData.bank_filter === '否') {
+      document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+      document.getElementById('stepper').style.display = 'none';
+      document.getElementById('header').style.display = 'none';
+      document.getElementById('toolbar').style.display = 'none';
+      document.getElementById('disqualified').classList.add('visible');
+      return;
+    }
+  }
+
+  if (currentStep < totalSteps) {
+    showStep(currentStep + 1);
+  }
+}
+
+function prevStep() {
+  if (currentStep > 1) {
+    showStep(currentStep - 1);
+  }
+}
+
+// ========== SUBMIT ==========
+async function submitForm() {
+  if (!validateStep(currentStep)) return;
+
+  const loading = document.getElementById('loading');
+  loading.classList.add('show');
+
+  const payload = {
+    timestamp: new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }),
+    ...formData
+  };
+
+  try {
+    await fetch(GOOGLE_SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+  } catch (err) {
+    // no-cors mode — treat as success
+  }
+
+  loading.classList.remove('show');
+  document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+  document.getElementById('stepper').style.display = 'none';
+  document.getElementById('header').style.display = 'none';
+  document.getElementById('toolbar').style.display = 'none';
+  document.getElementById('successPage').classList.add('visible');
+}
+
+// Init
+updateStepper();
+</script>
+</body>
+</html>
