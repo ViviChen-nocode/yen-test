@@ -20,7 +20,9 @@ const SHEET_NAME = 'Sheet1'; // 如果你的工作表名稱不同，請修改
 function doPost(e) {
   try {
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];
-    const data = JSON.parse(e.postData.contents);
+    // 支援 form 提交 (e.parameter.payload) 和 JSON body (e.postData.contents)
+    const raw = e.parameter.payload || e.postData.contents;
+    const data = JSON.parse(raw);
 
     // 定義欄位順序（與試算表標題對應）
     const fields = [
